@@ -11,7 +11,7 @@ def plot_network(file):
         df_belgium = gpd.read_file(file)
         m = folium.Map([50.85045, 4.34878], zoom_start=9, tiles='cartodbpositron')
         folium.GeoJson(df_belgium).add_to(m)
-        return m, df_belgium
+        return folium_static(m)
 
 
 def plot_loss(tr_loss, val_loss):

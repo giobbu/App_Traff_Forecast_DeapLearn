@@ -19,9 +19,11 @@ import numpy as np
 import tensorflow as tf
 import folium
 import geopandas as gpd
+import pandas as pd
 
 # App packages
 import streamlit as st
+import altair as alt
 import SessionState
 import pydeck as pdk
 import matplotlib.pyplot as plt
@@ -64,47 +66,71 @@ def main():
         with st.beta_container():
 
                 st.title('LSTM-Encoder Decoder for Freight Traffic Forecasting')
-                st.write('Traffic flow forecasting is fundamental to todays Intelligent Transportation Systems (ITS). In this context deep learning models have recently shown promising results. The study presents a LSTM encoder-decoder for multi-horizon traffic flow predictions.')
+                st.write('Reliable Traffic Forecasting schemes are fundamental to design Proactive Intelligent Transportation Systems (ITS). In this context deep learning models have recently shown promising results. The Streamlit App presents a tutorial on multi-horizon traffic flow predictions with LSTM encoder-decoder model.')
                 st.write("Check the paper [HERE](https://www.researchgate.net/publication/348930068_A_Tutorial_on_Network-Wide_Multi-Horizon_Traffic_Forecasting_with_Deep_Learning)")
  
                 st.markdown("""---""")
 
-                # # # visualize streets
-                # st.header('Belgian Freeway System Map')
-                # map_txt = st.text('Loading map with streets...') 
-                # streets = load_streets(file_streets)
-                # m = folium.Map([38.8934, -76.9470],  zoom_start=12)
-                # st.markdown(m.repr_html(), unsafe_allow_html = True)
-                # st.markdown("""---""")
+                df = data_reader(path)
+                
 
-        
-       
-        # map = st.empty()
-        # check = st.empty()
-        # for i in range(2):
-        #         check.text('Loading map with streets...') 
-        #         r = plot_deck(streets)
-        #         map.pydeck_chart(r)
-        #         r.update()
-        #         check.text(i)
-        #         time.sleep(10)
-        # map_txt.text('Loading map with streets...done!')
+                st.header('Overview Highways')
+                st.text('Folium Visualization')
+                plot_network(file_streets)
+                streets = load_streets(file_streets)
 
+
+                st.header('Overview Traffic Data')
+                st.subheader('Raw OBU Data')              
+                st.dataframe(df.head())
+
+                st.markdown("""---""")
 
                 col0, col1, col2 = st.beta_columns(3)
 
                 with col0:
-                        # read OBU data file
-                        st.subheader('Raw OBU Data')
-                        data_txt = st.text('Loading 30-minutes data...')
-                        df = data_reader(path)
+                        st.subheader('Temporal Info')
+                        st.text('-- Period-- ')
+                        st.text('from ' + df.iloc[0,0])
+                        st.text('to '+ df.iloc[-1,0])
+                        st.text('Granularity: 30 minutes')
+                        st.text('Number Observations ' + str(df.shape[0]))
 
-                        fig, ax = plt.subplots()
-                        arr = df.mean(axis=0).iloc[1:].values
-                        ax.hist(arr, bins=200)
-                        st.pyplot(fig)
+                with col1:
+                        st.subheader('Spatial Info')
+                        st.text('Number of Streets: ' +str(df.shape[1]))
+                        st.text('-- Bounds Box --')
+                        box = streets.bounds.values[0]
+                        st.text('Upper Left: ' + str(round(box[3],3)) +', '+ str(round(box[0],3)))
+                        st.text('Lower Right: ' + str(round(box[1],3)) +', '+ str(round(box[2],3)))
 
-                        data_txt.text('Loading 30-minutes data...done!')
+
+                with col2:
+                        st.subheader('Traffic Info')
+                        mean = round(np.mean(df.iloc[:,1:].sum(axis=1).values),0)
+                        st.text('Total Mean: ' + str(mean))
+                        max = np.max(df.iloc[:,1:].sum(axis=1))
+                        st.text('Total Max: ' + str(max))
+                        min = np.min(df.iloc[:,1:].sum(axis=1))
+                        st.text('Total Min: ' + str(min))
+
+                st.markdown("""---""")
+
+                df_plot = df[['datetime']]
+                df_plot['value'] = df.iloc[:,1:].sum(axis=1)
+                line = alt.Chart(df_plot).mark_line().encode(x='datetime:T',y='value:Q', tooltip=['value', 'datetime']).properties(width=700, height=200).interactive()
+                st.altair_chart(line)
+
+                # read OBU data file
+                st.subheader('Data Distribution')
+                fig, ax = plt.subplots()
+                arr = df.mean(axis=0).iloc[1:].values
+                ax.hist(arr, bins=200)
+                st.pyplot(fig)
+                        
+
+                col1, col2 = st.beta_columns(2)
+
 
                 with col1:
                         # select meaninful streets (with variance) and perform feature engineering

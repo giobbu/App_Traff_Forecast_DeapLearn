@@ -14,7 +14,7 @@ logging.info("Im about to eat pizza(s) when...")
 
 
 def load_streets(file):
-        streets_df = gpd.read_file(file)
+        streets_df = gpd.read_file(file, crs="EPSG:4326")
         return streets_df
 
 # Reproducability
