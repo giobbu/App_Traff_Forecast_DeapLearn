@@ -53,6 +53,8 @@ def feat_engin(MEAN_VALUE, dataframe):
     DATAFRAME_ = dataframe
     DATAFRAME_ = DATAFRAME_.drop(['datetime'],axis=1) 
     DATAFRAME_ = DATAFRAME_[DATAFRAME_.columns.intersection(LST_SLCT_STREETS)]
+
+    
     # Time-based Covariates
     # minutes, hours
     DATAFRAME_['minutes'] = dataframe['Datetime'].dt.minute

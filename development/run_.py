@@ -1,11 +1,14 @@
 
 # ML packages
 import yaml
+import pickle
+
 from util import logging, load_streets
 from app_util import plot_network, plot_loss, plot_deck
+from app_util import plot_line_alt, plot_hist_alt, create_df_stats, plot_mat_alt, plot_trends, plot_violin_alt, plot_ridge_alt
 
 from data.data_module import data_reader, feat_engin, data_split_scale, data_loader
-from data.app_util import plot_distribution, plot_pie
+from data.app_util import plot_distribution, plot_gantt, plot_tensor
 from model.model_module import LSTM_ED
 from training.train_module import training
 from training.util import opt, loss_fct, valid_loss_fct
@@ -20,6 +23,7 @@ import tensorflow as tf
 import folium
 import geopandas as gpd
 import pandas as pd
+
 
 # App packages
 import streamlit as st
@@ -71,145 +75,273 @@ def main():
  
                 st.markdown("""---""")
 
-                df = data_reader(path)
-                
 
-                st.header('Overview Highways')
-                st.text('Folium Visualization')
-                plot_network(file_streets)
-                streets = load_streets(file_streets)
-
-
-                st.header('Overview Traffic Data')
-                st.subheader('Raw OBU Data')              
-                st.dataframe(df.head())
-
-                st.markdown("""---""")
-
-                col0, col1, col2 = st.beta_columns(3)
-
-                with col0:
-                        st.subheader('Temporal Info')
-                        st.text('-- Period-- ')
-                        st.text('from ' + df.iloc[0,0])
-                        st.text('to '+ df.iloc[-1,0])
-                        st.text('Granularity: 30 minutes')
-                        st.text('Number Observations ' + str(df.shape[0]))
-
-                with col1:
-                        st.subheader('Spatial Info')
-                        st.text('Number of Streets: ' +str(df.shape[1]))
-                        st.text('-- Bounds Box --')
-                        box = streets.bounds.values[0]
-                        st.text('Upper Left: ' + str(round(box[3],3)) +', '+ str(round(box[0],3)))
-                        st.text('Lower Right: ' + str(round(box[1],3)) +', '+ str(round(box[2],3)))
-
-
-                with col2:
-                        st.subheader('Traffic Info')
-                        mean = round(np.mean(df.iloc[:,1:].sum(axis=1).values),0)
-                        st.text('Total Mean: ' + str(mean))
-                        max = np.max(df.iloc[:,1:].sum(axis=1))
-                        st.text('Total Max: ' + str(max))
-                        min = np.min(df.iloc[:,1:].sum(axis=1))
-                        st.text('Total Min: ' + str(min))
-
-                st.markdown("""---""")
-
-                df_plot = df[['datetime']]
-                df_plot['value'] = df.iloc[:,1:].sum(axis=1)
-                line = alt.Chart(df_plot).mark_line().encode(x='datetime:T',y='value:Q', tooltip=['value', 'datetime']).properties(width=700, height=200).interactive()
-                st.altair_chart(line)
-
-                # read OBU data file
-                st.subheader('Data Distribution')
-                fig, ax = plt.subplots()
-                arr = df.mean(axis=0).iloc[1:].values
-                ax.hist(arr, bins=200)
-                st.pyplot(fig)
+                if st.button('Data Summary'):
+                        st.title('Overview')
+                        df = data_reader(path)
+                        streets = load_streets(file_streets)
                         
+                        st.header('Highways')
+                        st.text('Folium Visualization')
+                        plot_network(file_streets)
+                        
+                        st.header('Traffic Data')
+                        st.subheader('Raw OBU Data')              
+                        st.dataframe(df.head())
 
-                col1, col2 = st.beta_columns(2)
+                        col0, col1, col2 = st.beta_columns(3)
+
+                        with col0:
+                                st.subheader('Temporal')
+                                st.text('-- Period-- ')
+                                st.text('from ' + df.iloc[0,0])
+                                st.text('to '+ df.iloc[-1,0])
+                                st.text('Granularity: 30 minutes')
+                                st.text('Number Observations ' + str(df.shape[0]))
+
+                        with col1:
+                                st.subheader('Spatial')
+                                st.text('Number of Streets: ' +str(df.shape[1]))
+                                st.text('-- Bounds Box --')
+                                box = streets.bounds.values[0]
+                                st.text('Upper Left: ' + str(round(box[3],3)) +', '+ str(round(box[0],3)))
+                                st.text('Lower Right: ' + str(round(box[1],3)) +', '+ str(round(box[2],3)))
+
+                        with col2:
+                                st.subheader('Traffic')
+                                mean = round(np.mean(df.iloc[:,1:].sum(axis=1).values),0)
+                                st.text('Total Mean: ' + str(mean))
+                                max = np.max(df.iloc[:,1:].sum(axis=1))
+                                st.text('Total Max: ' + str(max))
+                                min = np.min(df.iloc[:,1:].sum(axis=1))
+                                st.text('Total Min: ' + str(min))
+
+                        st.markdown("""---""")
+
+                        if st.button("BACK"):
+                                st.text("Restarting...")
+
+                elif st.button('Data Exploration'):
+
+                        st.markdown("""---""")
+                        st.title('Info & Viz')
+
+                        df = data_reader(path)
+                        # compute max OBU traffic
+                        df_stats = create_df_stats(df)
+                        streets = load_streets(file_streets)
+                        
+                        st.subheader('Check the whole period')
+                        # plot timeseries total obu traffic
+                        plot_line_alt(df)
+
+                        # plot histogram mean obu traffic
+                        plot_hist_alt(df)
+
+                        # plot matrix OBU traffic
+                        df_max = df_stats.groupby('date').agg({'flow_sum':'max'}).reset_index()
+                        plot_mat_alt(df_max)
+                        
+                        st.subheader('Check working days/weekend')
+                        # plot avg trend working, sat, sund
+                        plot_trends(df)
+
+                        # plot max OBU data working, sat, sund
+                        df_ww = df_stats.copy()
+                        df_ww.loc[df_ww.week < 5, "week"] = "max_working_days"
+                        df_ww.loc[df_ww.week == 5, "week"] = "max_saturdays"
+                        df_ww.loc[df_ww.week ==6, "week"] = "max_sundays"
+                        df_max = df_ww.groupby('week').agg({'flow_sum':'max'}).reset_index()
+                        plot_violin_alt(df_max)
 
 
-                with col1:
+                        st.subheader('Check days of the week')
+
+                        # plot max OBU data distribution days of the week
+
+                        df_stats.loc[df_stats.week == 0, "week"] = "1_mon"
+                        df_stats.loc[df_stats.week == 1, "week"] = "2_tue"
+                        df_stats.loc[df_stats.week == 2, "week"] = "3_wed"
+                        df_stats.loc[df_stats.week == 3, "week"] = "4_thu"
+                        df_stats.loc[df_stats.week == 4, "week"] = "5_fri"
+                        df_stats.loc[df_stats.week == 5, "week"] = "6_sat"
+                        df_stats.loc[df_stats.week ==6, "week"] = "7_sun"
+                        df_max = df_stats.groupby('week').agg({'flow_sum':'max'}).reset_index()
+                        plot_ridge_alt(df_max, title = 'Max OBU traffic per day of the week ')
+                        
+                        st.subheader('Check hours of working day')
+                        df_max = df_stats.groupby('hour').agg({'flow_sum':'max'}).reset_index()
+                        plot_ridge_alt(df_max, title = 'Max OBU traffic per hour of the working days ')
+
+
+
+                        if st.button("BACK"):
+                                st.text("Restarting...")
+
+                elif st.button('Data Preparation'):
+
+                        df = data_reader(path)
+                        streets = load_streets(file_streets)                
+
                         # select meaninful streets (with variance) and perform feature engineering
                         st.subheader('Select Streets')
-                        feat_txt = st.text('Feature Engineering...')
+
+                        st.text('select streets with avg traffic flow higher than '+str(mean_value)+' number trucks/30 minutes')
                         df_new, lst_streets, timestamp = feat_engin(mean_value, df)
                         
-                        fig, ax = plt.subplots()
-                        arr = df_new.mean(axis=0).iloc[:-4].values
-                        ax.hist(arr, bins=200)
-                        st.pyplot(fig)
+                        plot_distribution(df_new, 'blue', 700, 400)
 
-                with col2:
+                        st.markdown("""---""")
 
                         st.subheader('Add Features')
+                        st.text('create temporal covariates to improve model learning')
                         st.text(list(df_new.columns[-4:])[0])
                         st.text(list(df_new.columns[-4:])[1])
                         st.text(list(df_new.columns[-4:])[2])
                         st.text(list(df_new.columns[-4:])[3])
+
+
+                        st.markdown("""---""")
+
+                        with st.beta_container():
+                                
+                                st.header('Naive Time Series Split')
+                                st.text('1 week of OBU data for validation,  1 week for testing and rest for training the model')
+                                # split and scale the data
+                                train, val, test, scaler, timestamp_test = data_split_scale(df_new, validation_period, testing_period, n_feat_time, timestamp)
+
+                                st.subheader('Gantt Chart')
+                                plot_gantt(train, val, test)
+
+                                
+                                st.subheader('Line Plot')
+                                x = list(range(df_new.shape[0]))
+                                line_tr = train[:,:-4].mean(axis=1)
+                                line_vl = val[:,:-4].mean(axis=1)
+                                line_ts = test[:,:-4].mean(axis=1)
+                                labels = ['train','validation','test']
+
+                                fig, ax = plt.subplots()
+                                ax.plot(x[:train.shape[0]], line_tr, color='blue')
+                                ax.plot(x[train.shape[0]:train.shape[0]+val.shape[0]], line_vl, color='orange')
+                                ax.plot(x[train.shape[0]+val.shape[0]:train.shape[0]+val.shape[0]+test.shape[0]], line_ts, color='green')
+                                ax.legend(labels)
+                                st.pyplot(fig, width =10) 
+
+                                st.subheader('Data sets distributions after scaling (0,1)')
+                                col6, col7, col8 = st.beta_columns(3)
+                                
+                                with col6:               
+                                        st.text('Training set')
+                                        plot_distribution(train, 'blue', 250, 300)
+                                                
+                                with col7:
+                                        st.text('Validation set')
+                                        plot_distribution(val, 'orange', 250, 300)
+
+                                with col8:
+                                        st.text('Testing set')
+                                        plot_distribution(test, 'green', 250, 300)
+
+                                st.markdown("""---""")
+
+                                st.header('Prepare Tensors for Deep Learning - (Batch, Sequence, Features)')
+
+                                st.markdown("""---""")
+
+                                st.text('Input sequence length : ' +str(inp_sqc))
+                                st.text('Output sequence length: ' +str(out_sqc))
+                                st.text('Number of total features : ' +str(total_dim))
+                                st.text('Number of temporal-covariates : ' +str(aux_dim))
+                                st.text('Batch sz train/valid : ' +str(batch_tr))
+                                st.text('Batch sz test : ' +str(batch_ts))
+
+                                st.markdown("""---""")
+
+                                # transform the data to tensors
+                                tensor_train = data_loader(train, inp_sqc, out_sqc, aux_dim, batch_tr)
+                                tensor_valid = data_loader(val, inp_sqc, out_sqc, aux_dim, batch_vl)
+                                tensor_test = data_loader(test, inp_sqc, out_sqc, aux_dim, batch_ts)
+
+                                st.subheader(' Batch Sample ')
+
+                                col6, col7, col8 = st.beta_columns(3)
+                                
+                                with col6:
+
+                                        st.write('Training')
+
+                                        for x in tensor_train:
+                                                st.write('input encoder')
+                                                st.write(x[0][0].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, total_dim, batch_tr,  c='blue')
+                                                st.write('input decoder')
+                                                st.write(x[0][1].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, aux_dim, batch_tr,  c='blue')
+                                                st.write('output decoder')
+                                                st.write(x[1].shape)
+                                                plot_tensor(0, 0, 0,  out_sqc, total_dim, batch_tr,  c='blue')
+                                                break
+
+                                        
+                                        
+
+                                with col7:
+
+                                        st.write('Validation')
+
+                                        for x in tensor_valid:
+
+                                                st.write('input encoder')
+                                                st.write(x[0][0].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, total_dim, batch_vl,  c='orange')
+                                                st.write('input decoder')
+                                                st.write(x[0][1].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, aux_dim, batch_vl,  c='orange')
+                                                st.write('output decoder')
+                                                st.write(x[1].shape)
+                                                plot_tensor(0, 0, 0,  out_sqc, aux_dim, batch_vl,  c='orange')
+
+                                                break
+
+
+                                with col8:
+
+                                        st.write('Testing')
+
+                                        for x in tensor_test:
+                                                
+                                                st.write('input encoder')
+                                                st.write(x[0][0].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, total_dim, batch_ts,  c='green')
+                                                st.write('input decoder')
+                                                st.write(x[0][1].shape)
+                                                plot_tensor(0, 0, 0,  inp_sqc, aux_dim, batch_ts,  c='green')
+                                                st.write('output decoder')
+                                                st.write(x[1].shape)
+                                                plot_tensor(0, 0, 0,  out_sqc, aux_dim, batch_ts,  c='green')
+
+                                                break
+
+                                st.markdown("""---""")
+
+                                # save tensors
+                                save = st.text('saving tensors ...')
+
+
+                                with open('meta_data.pkl','wb') as f:
+                                        pickle.dump([train, scaler, lst_streets, streets, timestamp_test], f)
+
+                                save.text('saving tensors ... done.')
+
+                                if st.button("BACK"):
+                                        st.text("Restarting...")
+
+                                logging.info("-- prepare pipeline for tf")
+
+
+                elif st.button('Model Configuration'): # or session_state.check1:
                         
-
-                        feat_txt.text('Feature Engineering...done!')
-
-
-        st.markdown("""---""")
-
-        with st.beta_container():
-                # split and scale the data
-                train, val, test, scaler, timestamp_test = data_split_scale(df_new, validation_period, testing_period, n_feat_time, timestamp)
-
-                
-                st.subheader('Distributions')
-                col4, col5, col6 = st.beta_columns(3)
-                
-                with col4:               
-                        st.subheader('Training set')
-                        plot_distribution(train, 'blue')
-                                      
-                with col5:
-                        st.subheader('Validation set')
-                        plot_distribution(val, 'orange')
-
-                with col6:
-                        st.subheader('Testing set')
-                        plot_distribution(test, 'green')
-
-                st.subheader('Splitting')
-
-                col7,  col9 = st.beta_columns((2, 2))
-                
-                with col7:
-                        st.subheader('Pie Chart')
-                        plot_pie(train, val, test)
-                
-                with col9:
-                        st.subheader('Line Plot')
-                        x = list(range(df_new.shape[0]))
-                        line_tr = train[:,:-4].mean(axis=1)
-                        line_vl = val[:,:-4].mean(axis=1)
-                        line_ts = test[:,:-4].mean(axis=1)
-                        labels = ['train','validation','test']
-
-                        fig, ax = plt.subplots()
-                        ax.plot(x[:train.shape[0]], line_tr, color='blue')
-                        ax.plot(x[train.shape[0]:train.shape[0]+val.shape[0]], line_vl, color='orange')
-                        ax.plot(x[train.shape[0]+val.shape[0]:train.shape[0]+val.shape[0]+test.shape[0]], line_ts, color='green')
-                        ax.legend(labels)
-                        st.pyplot(fig, width =10) 
-
-                st.markdown("""---""")
-
-                # transform the data to tensors
-                tensor_train = data_loader(train, inp_sqc, out_sqc, aux_dim, batch_tr)
-                tensor_valid = data_loader(val, inp_sqc, out_sqc, aux_dim, batch_vl)
-                tensor_test = data_loader(test, inp_sqc, out_sqc, aux_dim, batch_ts)
-                logging.info("-- prepare pipeline for tf")
-
-
-                if st.button('configure the model') or session_state.check1:
                         st.subheader('Configure')
 
                         hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta = slider_display()
@@ -217,29 +349,48 @@ def main():
                         save_updates_yaml(hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta)
 
                         lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
-                        
-                        session_state.check1 = True
 
-                        if st.button("CONTINUE - TRAIN"):
-                                st.subheader('Training')
-                                # start training
-                                step_epoch = len(train) // batch_tr
-                                
-                                lstm_ed = training(lstm_ed, nb_epchs, step_epoch, # model, number of epochs, steps per epoch
-                                        tensor_train,  tensor_valid, # training and validation tensors
-                                        loss_fct, valid_loss_fct, opt, # loss functions and optimizer
-                                        patience, delta) # early stopping
-
-                                st.text("Save trained model...")
-                                session_state.check1 = False
-
-                                if st.button("RESTART APP TO TEST"):
+                        if st.button("BACK"):
                                         st.text("Restarting...")
+                        
+                        #session_state.check1 = True÷
 
-                elif st.button('train with default'):
+                        # if st.button("CONTINUE - TRAIN"):
+                        #         st.subheader('Training')
+
+                        #         # start training
+                        #         step_epoch = len(train) // batch_tr
+                                
+                        #         lstm_ed = training(lstm_ed, nb_epchs, step_epoch, # model, number of epochs, steps per epoch
+                        #                 tensor_train,  tensor_valid, # training and validation tensors
+                        #                 loss_fct, valid_loss_fct, opt, # loss functions and optimizer
+                        #                 patience, delta) # early stopping
+
+                        #         st.text("Save trained model...")
+                        #         session_state.check1 = False
+
+                        #         if st.button("RESTART APP"):
+                        #                 st.text("Restarting...")
+
+
+                elif st.button('Model Train'):
+
                         hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta= upload_yaml()
                         lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
                         st.subheader('Training')
+
+                        # load tensors
+
+                        # with open('tensor_train.pkl','rb') as f:
+                        #                 tensor_train = pickle.load(f)
+
+                        # with open('tensor_valid.pkl','rb') as f:
+                        #                 tensor_valid = pickle.load(f)
+
+                        with open('meta_data.pkl','rb') as f:
+                                        train, scaler, lst_streets, streets, timestamp_test = pickle.load(f)
+
+
                         # start training
                         step_epoch = len(train) // batch_tr
                         
@@ -250,22 +401,32 @@ def main():
                         st.text("Save trained model...")
                         session_state.check1 = False
 
-                        if st.button("RESTART APP TO TEST"):
+                        if st.button("BACK"):
                                 st.text("Restarting...")
 
 
-                elif st.button('start predictions'):
+                elif st.button('Model Inference'):
 
                         hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta= upload_yaml()
                         lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
-
+                        
+                        # load model
                         checkpoint = tf.train.Checkpoint(model = lstm_ed)
                         checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+                        
+                        # # load tensor test and other info
+                        # with open('tensor_test.pkl','rb') as f:
+                        #                 tensor_test = pickle.load(f)
+
+                        #load meta data
+                        with open('meta_data.pkl','rb') as f:
+                                        train, scaler, lst_streets, streets, timestamp_test = pickle.load(f)
 
                         st.subheader('Testing')
                         pred, targ, rmse, mae = testing(lstm_ed, tensor_test, aux_dim, scaler, out_sqc, lst_streets, streets, timestamp_test[inp_sqc:]) 
 
         # logging.info("Finally, I can eat my pizza(s)")
+
 
 if __name__ == "__main__":
         main()

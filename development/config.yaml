@@ -15,7 +15,7 @@ model:
   dropout: 0.1
   hidd_dim: 25
   krnl_reg: 0.001
-  nb_epochs: 5
+  nb_epochs: 1
   rcr_init: glorot_uniform
 script_path: data/Flow_BEL_street_30min.csv
 seed: 31415
