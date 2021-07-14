@@ -328,6 +328,8 @@ def main():
                                 # save tensors
                                 save = st.text('saving tensors ...')
 
+                                tf.data.experimental.save(tensor_train, './train_tensor', compression='GZIP')
+
 
                                 with open('meta_data.pkl','wb') as f:
                                         pickle.dump([train, scaler, lst_streets, streets, timestamp_test], f)
