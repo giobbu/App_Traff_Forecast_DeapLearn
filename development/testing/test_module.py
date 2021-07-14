@@ -30,7 +30,7 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
     map = st.pydeck_chart(r)
 
     df = pd.DataFrame({'timestamp':[], 'avgPred': [], 'avgTarg': []})
-    line = alt.Chart(df, title="LSTM encoder decoder predictions").transform_fold(['avgPred', 'avgTarg']).mark_line().encode(x='timestamp:T',y='value:Q',color='key:N').properties(width=1100, height=500)
+    line = alt.Chart(df, title="LSTM encoder decoder predictions").transform_fold(['avgPred', 'avgTarg']).mark_line().encode(x='timestamp:T',y='value:Q',color='key:N').properties(width=800, height=500)
     chart = st.altair_chart(line)
 
     col3, col4 = st.beta_columns(2)

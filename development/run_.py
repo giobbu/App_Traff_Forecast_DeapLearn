@@ -3,7 +3,7 @@
 import yaml
 import pickle
 
-from util import logging, load_streets
+from util import logging, load_streets, set_seed
 from app_util import plot_network, plot_loss, plot_deck
 from app_util import plot_line_alt, plot_hist_alt, create_df_stats, plot_mat_alt, plot_trends, plot_violin_alt, plot_ridge_alt
 
@@ -64,6 +64,8 @@ batch_ts =  config['loader']['batch_ts']
 def main():
 
         st.set_page_config(page_title="APP")
+
+        set_seed(42)
 
         st.markdown("""---""")
         # Space out the maps so the first one is 2x the size of the other three
@@ -326,15 +328,23 @@ def main():
                                 st.markdown("""---""")
 
                                 # save tensors
+
                                 save = st.text('saving tensors ...')
 
-                                tf.data.experimental.save(tensor_train, './train_tensor', compression='GZIP')
+                                if not os.path.isdir('./train_tensor'):
 
+                                        tf.data.experimental.save(tensor_train, './train_tensor', compression = 'GZIP')
+                                        tf.data.experimental.save(tensor_valid, './valid_tensor', compression = 'GZIP')
+                                        tf.data.experimental.save(tensor_test, './test_tensor', compression = 'GZIP')
 
-                                with open('meta_data.pkl','wb') as f:
-                                        pickle.dump([train, scaler, lst_streets, streets, timestamp_test], f)
+                                        with open('meta_data.pkl','wb') as f:
+                                                pickle.dump([train, scaler, lst_streets, streets, timestamp_test], f)
 
-                                save.text('saving tensors ... done.')
+                                        save.text('saving tensors ... done.')
+
+                                else:
+                                        save.text('tensors already saved.')
+
 
                                 if st.button("BACK"):
                                         st.text("Restarting...")
@@ -342,69 +352,70 @@ def main():
                                 logging.info("-- prepare pipeline for tf")
 
 
-                elif st.button('Model Configuration'): # or session_state.check1:
+                elif st.button('Model Training') or session_state.check1:
                         
-                        st.subheader('Configure')
+                        st.subheader('Model Configuration')
 
                         hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta = slider_display()
                         
                         save_updates_yaml(hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta)
 
                         lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
+                       
+                        session_state.check1 = True
 
-                        if st.button("BACK"):
-                                        st.text("Restarting...")
-                        
-                        #session_state.check1 = True÷
+                        st.markdown("""---""")
 
-                        # if st.button("CONTINUE - TRAIN"):
-                        #         st.subheader('Training')
-
-                        #         # start training
-                        #         step_epoch = len(train) // batch_tr
-                                
-                        #         lstm_ed = training(lstm_ed, nb_epchs, step_epoch, # model, number of epochs, steps per epoch
-                        #                 tensor_train,  tensor_valid, # training and validation tensors
-                        #                 loss_fct, valid_loss_fct, opt, # loss functions and optimizer
-                        #                 patience, delta) # early stopping
-
-                        #         st.text("Save trained model...")
-                        #         session_state.check1 = False
-
-                        #         if st.button("RESTART APP"):
-                        #                 st.text("Restarting...")
+                        if st.button("CONTINUE - TRAIN"):
+                                st.subheader('Training')
 
 
-                elif st.button('Model Train'):
+                                tensor_train = tf.data.experimental.load('./train_tensor', compression='GZIP')
+                                tensor_valid = tf.data.experimental.load('./valid_tensor', compression='GZIP')
 
-                        hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta= upload_yaml()
-                        lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
-                        st.subheader('Training')
 
-                        # load tensors
-
-                        # with open('tensor_train.pkl','rb') as f:
-                        #                 tensor_train = pickle.load(f)
-
-                        # with open('tensor_valid.pkl','rb') as f:
-                        #                 tensor_valid = pickle.load(f)
-
-                        with open('meta_data.pkl','rb') as f:
+                                with open('meta_data.pkl','rb') as f:
                                         train, scaler, lst_streets, streets, timestamp_test = pickle.load(f)
 
+                                # start training
+                                step_epoch = len(train) // batch_tr
+                                
+                                lstm_ed = training(lstm_ed, nb_epchs, step_epoch, # model, number of epochs, steps per epoch
+                                        tensor_train,  tensor_valid, # training and validation tensors
+                                        loss_fct, valid_loss_fct, opt, # loss functions and optimizer
+                                        patience, delta) # early stopping
 
-                        # start training
-                        step_epoch = len(train) // batch_tr
+                                st.text("Save trained model...")
+                                session_state.check1 = False
+
+                                if st.button("RESTART APP"):
+                                        st.text("Restarting...")
+
+
+                # elif st.button('Model Train'):
+
+                #         hidd_dim, nb_epchs, rcr, krnl, dr, patience, delta= upload_yaml()
+                #         lstm_ed = LSTM_ED(total_dim, hidd_dim, rcr, krnl, dr)
+                #         st.subheader('Training')
+
+                #         # load tensors
+
+                #         with open('meta_data.pkl','rb') as f:
+                #                         train, scaler, lst_streets, streets, timestamp_test = pickle.load(f)
+
+
+                #         # start training
+                #         step_epoch = len(train) // batch_tr
                         
-                        lstm_ed = training(lstm_ed, nb_epchs, step_epoch, 
-                                                tensor_train,  tensor_valid, # training and validation tensors
-                                                loss_fct, valid_loss_fct, opt, patience, delta) # early stopping
+                #         lstm_ed = training(lstm_ed, nb_epchs, step_epoch, 
+                #                                 tensor_train,  tensor_valid, # training and validation tensors
+                #                                 loss_fct, valid_loss_fct, opt, patience, delta) # early stopping
 
-                        st.text("Save trained model...")
-                        session_state.check1 = False
+                #         st.text("Save trained model...")
+                #         session_state.check1 = False
 
-                        if st.button("BACK"):
-                                st.text("Restarting...")
+                #         if st.button("BACK"):
+                #                 st.text("Restarting...")
 
 
                 elif st.button('Model Inference'):
@@ -417,8 +428,7 @@ def main():
                         checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
                         
                         # # load tensor test and other info
-                        # with open('tensor_test.pkl','rb') as f:
-                        #                 tensor_test = pickle.load(f)
+                        tensor_test = tf.data.experimental.load('./test_tensor',  compression='GZIP')
 
                         #load meta data
                         with open('meta_data.pkl','rb') as f:

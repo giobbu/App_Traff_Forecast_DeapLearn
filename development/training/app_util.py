@@ -16,13 +16,13 @@ PATIENCE = config['tr_phs']['patience']
 DELTA = config['tr_phs']['min_delta']
 
 def slider_display():
-    hidd_dim  = st.sidebar.selectbox('Hidden Dimension',(HIDD_DIM, 50, 75))
-    nb_epochs  = st.sidebar.selectbox('Number of Epochs',(1, 5, NB_EPOCHS, 50, 75))
-    rcr  = st.sidebar.selectbox('Recurrent Initializer',(RCR, 'HeNormal', 'GlorotNormal'))
-    krnl  = st.sidebar.selectbox('Kernel Regulizer',(KRNL, 0.002, 0.003))
-    dr  = st.sidebar.selectbox('Dropout',(DR, 0.2, 0.3))
-    patience  = st.sidebar.selectbox('EarlyStop - Patience',(10, PATIENCE, 30))
-    delta  = st.sidebar.selectbox('EarlyStop - Delta',(0.00005, DELTA, 0.0002))
+    hidd_dim  = st.selectbox('Hidden Dimension',(HIDD_DIM, 50, 75))
+    nb_epochs  = st.selectbox('Number of Epochs',(1, 5, NB_EPOCHS, 50, 75))
+    rcr  = st.selectbox('Recurrent Initializer',(RCR, 'HeNormal', 'GlorotNormal'))
+    krnl  = st.selectbox('Kernel Regulizer',(KRNL, 0.002, 0.003))
+    dr  = st.selectbox('Dropout',(DR, 0.2, 0.3))
+    patience  = st.selectbox('EarlyStop - Patience',(10, PATIENCE, 30))
+    delta  = st.selectbox('EarlyStop - Delta',(0.00005, DELTA, 0.0002))
 
 
     return hidd_dim, nb_epochs, rcr, krnl, dr, patience, delta
