@@ -17,6 +17,7 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
     logging.info('Testing started')
     forecasts = []
     targets = []
+    target_plot = []
     rmse_list = []
     mae_list = []
     mean_rmse = []
@@ -24,14 +25,15 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
 
 
     timestamp_txt = st.empty()
+    multi_timestamp_txt = st.empty()
 
     # bar = st.progress(0)
     r = initial_layer_deck()
     map = st.pydeck_chart(r)
 
-    df = pd.DataFrame({'timestamp':[], 'avgPred': [], 'avgTarg': []})
-    line = alt.Chart(df, title="LSTM encoder decoder predictions").transform_fold(['avgPred', 'avgTarg']).mark_line().encode(x='timestamp:T',y='value:Q',color='key:N').properties(width=800, height=500)
-    chart = st.altair_chart(line)
+
+    chart_all = st.empty()
+    chart_multi = st.empty()
 
     col3, col4 = st.beta_columns(2)
 
@@ -47,17 +49,13 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             chart_mae = st.altair_chart(c, use_container_width=True)
             
             
-
-    
-    
     for (step, (inp_tot, targ)) in enumerate(tensor_test):
 
-            timestamp_txt.subheader(timestamp.iloc[step])
-            
             inp, aux = inp_tot[0], inp_tot[1]
             targ = tf.cast(targ, tf.float32)
             pred = model(inp, aux, training=False)
             
+            past = inverse_transform(inp[0][:,:- aux_dim],  scaler)
             truth = inverse_transform(targ[0][:,:- aux_dim],  scaler)
             pred = inverse_transform(pred[0][:,:-aux_dim],  scaler)
   
@@ -68,6 +66,11 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
                       
             forecasts.append(pred)
             targets.append(truth)
+
+            if step == 0:
+                target_plot.append(past)
+            else:
+                target_plot.append(past[-1])
             
             rmse, mae = evaluation_fct(targets, forecasts, out_sqc)
 
@@ -76,24 +79,43 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             rmse_list.append(rmse)
             mae_list.append(mae)
 
-            mean_pred = np.mean(pred[0])
-            mean_truth = np.mean(truth[0])
+            mean_pred_multi = np.sum(pred, axis=1)
+            mean_truth_multi = np.sum(truth, axis=1)
+
+            all_truth = np.sum(np.vstack(target_plot), axis=1)
+
             mean_rmse = np.mean(rmse_list)
             maen_mae = np.mean(mae_list)
 
-            df= pd.DataFrame({'timestamp':[timestamp.iloc[step]], 'avgPred': [mean_pred], 'avgTarg': [mean_truth]})
-            chart.add_rows(df)
+            df_all = pd.DataFrame({'timestamp':timestamp.iloc[:step+12], 'Targ': all_truth})
+            line_all = alt.Chart(df_all).transform_fold(['Targ']).mark_line().encode(x='timestamp:T', y='value:Q',color='key:N').properties(width=800, height=500)
+
+            df_multi_targ = pd.DataFrame({'timestamp':timestamp.iloc[step+12:step+24], 'Targ_': mean_truth_multi})
+            line_multi_targ = alt.Chart(df_multi_targ).transform_fold(['Targ_']).mark_line().encode(x='timestamp:T', y='value:Q',color='key:N').properties(width=800, height=500)
+            
+            df_multi_pred = pd.DataFrame({'timestamp':timestamp.iloc[step+12:step+24], 'Pred': mean_pred_multi})
+            line_multi_pred = alt.Chart(df_multi_pred).transform_fold(['Pred']).mark_line().encode(x='timestamp:T', y='value:Q',color='key:N').properties(width=800, height=500)
+
+            chart_all.altair_chart(line_all + line_multi_pred + line_multi_targ)
+        
+
+            df_multi = pd.DataFrame({'timestamp':timestamp.iloc[step+12:step+24], 'Pred': mean_pred_multi, 'Targ': mean_truth_multi})
+            line_multi = alt.Chart(df_multi, title = 'Prediction from ' +str(timestamp.iloc[step])+' to '+str(timestamp.iloc[step+11])).transform_fold(['Pred', 'Targ']).mark_line().encode(x='timestamp:T', y='value:Q',color='key:N').properties(width=800, height=500)
+            chart_multi.altair_chart(line_multi)
             
             with col3:
                     df_rmse = pd.DataFrame({'timestamp':[timestamp.iloc[step]],'RMSE': [mean_rmse]})
                     chart_rmse.add_rows(df_rmse)
+
             with col4:
                     df_mae = pd.DataFrame({'timestamp':[timestamp.iloc[step]], 'MAE': [maen_mae]})
                     chart_mae.add_rows(df_mae)
 
             
 
-            time.sleep(1)
+            
+
+        #     time.sleep(1)
             # bar.progress(step)
 
     return forecasts, targets, rmse_list, mae_list

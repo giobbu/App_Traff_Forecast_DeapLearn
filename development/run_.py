@@ -435,7 +435,7 @@ def main():
                                         train, scaler, lst_streets, streets, timestamp_test = pickle.load(f)
 
                         st.subheader('Testing')
-                        pred, targ, rmse, mae = testing(lstm_ed, tensor_test, aux_dim, scaler, out_sqc, lst_streets, streets, timestamp_test[inp_sqc:]) 
+                        pred, targ, rmse, mae = testing(lstm_ed, tensor_test, aux_dim, scaler, out_sqc, lst_streets, streets, timestamp_test)#[inp_sqc:]) 
 
         # logging.info("Finally, I can eat my pizza(s)")
 
