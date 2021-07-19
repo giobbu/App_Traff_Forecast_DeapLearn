@@ -388,7 +388,7 @@ def main():
                                 st.text("Save trained model...")
                                 session_state.check1 = False
 
-                                if st.button("RESTART APP"):
+                                if st.button("BACK"):
                                         st.text("Restarting...")
 
 

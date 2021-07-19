@@ -43,7 +43,6 @@ def training(model, nb_epochs, step_epoch, train_set, valid_set, loss_fct, valid
 
     logging.info('Training started...')
     start = time.time()
-    bar= st.progress(0)
     df = pd.DataFrame({'Loss': [], 'Loss Val': []})
     chart = st.line_chart(df)
 
@@ -83,11 +82,11 @@ def training(model, nb_epochs, step_epoch, train_set, valid_set, loss_fct, valid
             logging.info("early stopping...") 
             break
         
-        if epoch % 1 == 0: #logging.info
+        if epoch % 50 == 0: #logging.info
             st.text("Epoch {}: Loss MAE: {:.5f} --- Val Loss MAE: {:.5f}".format(epoch,
                                                                         epoch_loss_avg.result(),
                                                                         epoch_valid_loss_avg.result()))
-        bar.progress(epoch + 1)
+
     logging.info('Time taken to train {} sec\n'.format(time.time() - start))
     logging.info('Training finished...')
     
