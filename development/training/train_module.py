@@ -24,10 +24,10 @@ def batch_loss(model, inp, aux, targ, loss_funct, opt = None):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
             
-            checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-            root = tf.train.Checkpoint(optimizer=opt,
+        checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+        root = tf.train.Checkpoint(optimizer=opt,
                                     model=model)
-            root.save(checkpoint_prefix)
+        root.save(checkpoint_prefix)
     return loss
 
 
