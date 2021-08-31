@@ -7,18 +7,16 @@ import yaml
 import altair as alt
 
 
-def initial_layer_deck():
+def layer_deck():
         INITIAL_VIEW_STATE = pdk.ViewState(latitude=50.85045, longitude=4.34878, zoom=8, max_zoom=8, pitch=45, bearing=0)
         r = pdk.Deck(initial_view_state=INITIAL_VIEW_STATE, map_style='mapbox://styles/mapbox/light-v9')
-        return r
+        return r, INITIAL_VIEW_STATE
 
-def update_layer_deck(lst, streets, pred):
+def deck(INITIAL_VIEW_STATE, lst, streets, pred):
 
         STREETS = [int(float(s)) for s in lst]
         df = streets[streets.index.isin(STREETS)]
         df['flow'] =  pd.DataFrame(pred).loc[0].astype(float).values
-
-        INITIAL_VIEW_STATE = pdk.ViewState(latitude=50.85045, longitude=4.34878, zoom=8, max_zoom=8, pitch=45, bearing=0)
 
         geojson = pdk.Layer(
                 "GeoJsonLayer",
@@ -59,7 +57,6 @@ def plot_line_all(time_past, time_window, past, pred, targ, pred_nv, w, h):
             df_multi_pred_nv = pd.DataFrame({'timestamp':time_window, 'Pred_Naive': pred_nv})
             line_pred_nv = alt.Chart(df_multi_pred_nv).transform_fold(['Pred_Naive']).mark_line().encode(x='timestamp:T', y='value:Q',  color='key:N').properties(width=w, height=h)
 
-
             df_zoom = pd.DataFrame({'timestamp':time_window, 'Pred': pred, 'Targ': targ})
             line_zoom = alt.Chart(df_zoom, title = 'Zoom on Prediction').transform_fold(['Pred', 'Targ']).mark_line().encode(x='timestamp:T', y='value:Q',color='key:N', strokeDash=alt.condition(alt.datum.value =='Targ', alt.value([5, 5]), alt.value([0]))).properties(width=w, height=h)
             
@@ -80,9 +77,6 @@ def plot_multistep_error(time_window, rmse_multi, std_rmse_multi, c, o,  w, h, s
                 error = alt.Chart(df_multi_rmse_std).mark_area(opacity = o,  color=c).encode(x='timestamp:T', y='ymax:Q', y2='ymin:Q').properties(width=w, height=h)
           
         return error, dot_multi_rmse 
-
-
-
 
 
 

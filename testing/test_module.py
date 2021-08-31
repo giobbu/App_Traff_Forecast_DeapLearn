@@ -2,16 +2,15 @@ from altair.vegalite.v4.schema.channels import Opacity, StrokeDash
 import numpy as np
 import time
 import pandas as pd
-
+import gc
 from model.model_module import naive
-
 from util import logging
 import tensorflow as tf
 from testing.util import inverse_transform, evaluation_fct
 
 import streamlit as st
 import altair as alt
-from testing.app_util import update_layer_deck, initial_layer_deck, plot_multistep_error, plot_line_all
+from testing.app_util import deck, layer_deck, plot_multistep_error, plot_line_all
 import pydeck as pdk
 
 
@@ -29,16 +28,20 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
     rmse_list = []
     mae_list = []
 
+    
+    st.markdown("""---""")
+    st.title('Multivariate Multi-Horizon Traffic Prediction')
 
     st.markdown("""---""")
-    st.header('Next Time Step Prediction ')
-    st.markdown("""---""")
+    st.header('Next 30 Minutes ')
 
-    r = initial_layer_deck()
+
+    r, INITIAL_VIEW_STATE = layer_deck()
     map = st.pydeck_chart(r)
 
     st.markdown("""---""")
-    st.header('Multi-Horizon Prediction of Total Belgian Traffic Flow ')
+    
+    title =st.empty()
     timestamp_t_h = st.empty()
 
     
@@ -47,7 +50,6 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
 
     st.markdown("""---""")
     st.header('Performance Metrics ')
-
 
 
     st.write('DeepLearn: Historic (red) and current (black)')
@@ -75,7 +77,6 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             chart_comp_rmse = st.empty()                            
     with col8:
             chart_comp_mae = st.empty()
-            
 
     st.write(' Total Error Over Time  ')
 
@@ -111,9 +112,7 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             forecasts.append(pred)
             targets.append(truth)
   
-            r = update_layer_deck(lst, streets, pred)
-            r.update()
-
+            r = deck(INITIAL_VIEW_STATE, lst, streets, pred)
             map.pydeck_chart(r)
                       
             rmse_nv, mae_nv = evaluation_fct(targets, forecasts_nv, out_sqc)
@@ -219,14 +218,20 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             time_past = timestamp.iloc[:step+12]
             time_window = timestamp.iloc[step+12:step+24]
 
+            title.header('Total Belgian Traffic Flow')
             timestamp_t_h.subheader('From '+str(timestamp.iloc[step+12]) +' To ' +str(timestamp.iloc[step+23]))
             line_past, line_targ, line_pred,line_pred_nv, line_zoom = plot_line_all( time_past, time_window, all_truth, mean_pred_multi, mean_truth_multi, mean_pred_multi_nv, 800, 500)
 
             chart_all.altair_chart(line_past + line_targ + line_pred + line_pred_nv)
             chart_multi.altair_chart(line_zoom)
+
+            del rmse_ci_nv, rmse_dot_nv, rmse_ci, rmse_dot, recent_rmse_ci, recent_rmse_dot
+            del mae_ci_nv, mae_dot_nv, mae_ci, mae_dot, recent_mae_ci, recent_mae_dot
+            del line_past, line_targ, line_pred, line_pred_nv, line_zoom
+            gc.collect()
             
 
-        #     time.sleep(1)
-            # bar.progress(step)
+            time.sleep(5)
+
 
     return forecasts, targets, rmse_list, mae_list
