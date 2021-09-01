@@ -72,6 +72,14 @@ class LSTM_ED(tf.keras.Model):
         self.rcr_init = rcr_init
         self.reg = reg
         self.drop_rt = drop_rt
+
+        self.lstmE0 = tf.keras.layers.LSTM(self.hidd_dim,
+                                         return_sequences=False,
+                                         return_state = True,
+                                         recurrent_initializer= self.rcr_init,
+                                         kernel_regularizer = regularizers.l2(self.reg),
+                                         activation = 'relu',
+                                         name='Encoder')
         
         self.lstmE = tf.keras.layers.LSTM(self.hidd_dim,
                                          return_sequences=False,
@@ -86,7 +94,9 @@ class LSTM_ED(tf.keras.Model):
                                           recurrent_initializer= self.rcr_init,
                                           kernel_regularizer=regularizers.l2(self.reg),
                                           activation = 'relu',
-                                          name ='Decoder') 
+                                          name ='Decoder')
+
+        
 
         self.drop = tf.keras.layers.Dropout(self.drop_rt)
 
@@ -102,22 +112,26 @@ class LSTM_ED(tf.keras.Model):
         inp_d = tf.cast(inp_d, tf.float32)
 
         # encoder
-        _, h, c = self.lstmE(inp_e)
-
-        # decoder
-        out_d = self.lstmD(inp_d, initial_state= [h, c])
+        out_e, h, c = self.lstmE0(inp_e)
 
         if training:
-            # Drop
+            out_e = self.drop(out_e, training=training)
+
+        _, h, c = self.lstmE(out_e)
+
+        # bi-directional decoder
+        # out_d = self.lstmD(inp_d, initial_state= [h, c])
+        out_d = tf.keras.layers.Bidirectional(self.lstmD, merge_mode ='ave')(inp_d, initial_state= [h, c]))
+
+        if training:
             out_d = self.drop(out_d, training=training)
 
         out_d = self.dense0(out_d)
 
         if training:
-            # Drop
             out_d = self.drop(out_d, training=training)
 
-        # Dense
+
         out = self.dense(out_d)
 
         return out
