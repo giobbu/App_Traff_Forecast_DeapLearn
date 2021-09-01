@@ -16,8 +16,8 @@ PATIENCE = config['tr_phs']['patience']
 DELTA = config['tr_phs']['min_delta']
 
 def slider_display():
-    hidd_dim  = st.selectbox('Hidden Dimension',(15, HIDD_DIM, 50, 75))
-    nb_epochs  = st.selectbox('Number of Epochs',(10, 25, 50, 75, 150))
+    hidd_dim  = st.selectbox('Hidden Dimension',(10, 15, 25, 50, 75))
+    nb_epochs  = st.selectbox('Number of Epochs',(10, 25, 50, 75, 150, 200, 250, 300))
     rcr  = st.selectbox('Recurrent Initializer',(RCR, 'HeNormal', 'GlorotNormal'))
     krnl  = st.selectbox('Kernel Regulizer',(KRNL, 0.002, 0.003))
     dr  = st.selectbox('Dropout',(DR, 0.2, 0.3))
