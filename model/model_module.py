@@ -105,7 +105,9 @@ class LSTM_ED(tf.keras.Model):
 
         self.drop = tf.keras.layers.Dropout(self.drop_rt)
 
-        self.dense0 = tf.keras.layers.Dense(self.hidd_dim, kernel_regularizer=regularizers.l2(self.reg))
+        self.dense0 = tf.keras.layers.Dense(self.hidd_dim,
+                                            activation = 'relu', 
+                                            kernel_regularizer=regularizers.l2(self.reg))
           
         self.dense = tf.keras.layers.Dense(self.tot_dim, 
                                            kernel_regularizer=regularizers.l2(self.reg))
