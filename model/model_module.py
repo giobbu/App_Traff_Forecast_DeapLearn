@@ -74,7 +74,7 @@ class LSTM_ED(tf.keras.Model):
         self.drop_rt = drop_rt
 
         self.lstmE0 = tf.keras.layers.LSTM(self.hidd_dim,
-                                         return_sequences=False,
+                                         return_sequences=True,
                                          return_state = True,
                                          recurrent_initializer= self.rcr_init,
                                          kernel_regularizer = regularizers.l2(self.reg),
