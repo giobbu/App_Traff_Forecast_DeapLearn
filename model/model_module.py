@@ -75,7 +75,7 @@ class LSTM_ED(tf.keras.Model):
 
         self.lstmE0 = tf.keras.layers.LSTM(self.hidd_dim,
                                          return_sequences=True,
-                                         return_state = True,
+                                         return_state = False,
                                          recurrent_initializer= self.rcr_init,
                                          kernel_regularizer = regularizers.l2(self.reg),
                                          activation = 'relu',
@@ -89,18 +89,23 @@ class LSTM_ED(tf.keras.Model):
                                          activation = 'relu',
                                          name='Encoder')
 
-        self.lstmD = tf.keras.layers.LSTM(self.hidd_dim, 
+        self.lstmD0 = tf.keras.layers.LSTM(self.hidd_dim, 
                                           return_sequences = True,
                                           recurrent_initializer= self.rcr_init,
                                           kernel_regularizer=regularizers.l2(self.reg),
                                           activation = 'relu',
                                           name ='Decoder')
 
-        
+        self.lstmD1 = tf.keras.layers.LSTM(self.hidd_dim, 
+                                          return_sequences = True,
+                                          recurrent_initializer= self.rcr_init,
+                                          kernel_regularizer=regularizers.l2(self.reg),
+                                          activation = 'relu',
+                                          name ='Decoder')
 
         self.drop = tf.keras.layers.Dropout(self.drop_rt)
 
-        self.dense0 = tf.keras.layers.Dense(50, kernel_regularizer=regularizers.l2(self.reg))
+        self.dense0 = tf.keras.layers.Dense(self.hidd_dim, kernel_regularizer=regularizers.l2(self.reg))
           
         self.dense = tf.keras.layers.Dense(self.tot_dim, 
                                            kernel_regularizer=regularizers.l2(self.reg))
@@ -111,27 +116,35 @@ class LSTM_ED(tf.keras.Model):
         inp_e = tf.cast(inp_e, tf.float32)
         inp_d = tf.cast(inp_d, tf.float32)
 
-        # encoder
-        out_e, h, c = self.lstmE0(inp_e)
+        # encoder 0
+        out_e = self.lstmE0(inp_e)
 
         if training:
             out_e = self.drop(out_e, training=training)
 
+        # encoder 1
         _, h, c = self.lstmE(out_e)
 
-        # bi-directional decoder
-        # out_d = self.lstmD(inp_d, initial_state= [h, c])
-        out_d = tf.keras.layers.Bidirectional(self.lstmD, merge_mode ='ave')(inp_d, initial_state= [h, c])
+        # decoder0
+        out_d = self.lstmD0(inp_d, initial_state= [h, c])
 
         if training:
             out_d = self.drop(out_d, training=training)
 
+        # decoder1
+        out_d = self.lstmD1(out_d)
+
+        if training:
+            out_d = self.drop(out_d, training=training)
+
+
+        # dense
         out_d = self.dense0(out_d)
 
         if training:
             out_d = self.drop(out_d, training=training)
 
-
+        # dense
         out = self.dense(out_d)
 
         return out

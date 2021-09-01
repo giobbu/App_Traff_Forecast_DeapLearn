@@ -13,7 +13,7 @@ loader:
   total_sqc: 24
 model:
   dropout: 0.1
-  hidd_dim: 25
+  hidd_dim: 15
   krnl_reg: 0.001
   nb_epochs: 10
   rcr_init: glorot_uniform
