@@ -78,18 +78,20 @@ class LSTM_ED(tf.keras.Model):
                                          return_state = True,
                                          recurrent_initializer= self.rcr_init,
                                          kernel_regularizer = regularizers.l2(self.reg),
-                                         activation = 'sigmoid',
+                                         activation = 'relu',
                                          name='Encoder')
 
         self.lstmD = tf.keras.layers.LSTM(self.hidd_dim, 
                                           return_sequences = True,
                                           recurrent_initializer= self.rcr_init,
                                           kernel_regularizer=regularizers.l2(self.reg),
-                                          activation = 'sigmoid',
+                                          activation = 'relu',
                                           name ='Decoder') 
 
         self.drop = tf.keras.layers.Dropout(self.drop_rt)
 
+        self.dense0 = tf.keras.layers.Dense(50, kernel_regularizer=regularizers.l2(self.reg))
+          
         self.dense = tf.keras.layers.Dense(self.tot_dim, 
                                            kernel_regularizer=regularizers.l2(self.reg))
                                            
@@ -104,6 +106,12 @@ class LSTM_ED(tf.keras.Model):
 
         # decoder
         out_d = self.lstmD(inp_d, initial_state= [h, c])
+
+        if training:
+            # Drop
+            out_d = self.drop(out_d, training=training)
+
+        out_d = self.dense0(out_d)
 
         if training:
             # Drop
