@@ -73,13 +73,6 @@ class LSTM_ED(tf.keras.Model):
         self.reg = reg
         self.drop_rt = drop_rt
 
-        self.lstmE0 = tf.keras.layers.LSTM(self.hidd_dim,
-                                         return_sequences=True,
-                                         return_state = False,
-                                         recurrent_initializer= self.rcr_init,
-                                         kernel_regularizer = regularizers.l2(self.reg),
-                                         activation = 'relu',
-                                         name='Encoder')
         
         self.lstmE = tf.keras.layers.LSTM(self.hidd_dim,
                                          return_sequences=False,
@@ -89,19 +82,14 @@ class LSTM_ED(tf.keras.Model):
                                          activation = 'relu',
                                          name='Encoder')
 
-        self.lstmD0 = tf.keras.layers.LSTM(self.hidd_dim, 
+        self.lstmD = tf.keras.layers.LSTM(self.hidd_dim, 
                                           return_sequences = True,
                                           recurrent_initializer= self.rcr_init,
                                           kernel_regularizer=regularizers.l2(self.reg),
                                           activation = 'relu',
                                           name ='Decoder')
 
-        self.lstmD1 = tf.keras.layers.LSTM(self.hidd_dim, 
-                                          return_sequences = True,
-                                          recurrent_initializer= self.rcr_init,
-                                          kernel_regularizer=regularizers.l2(self.reg),
-                                          activation = 'relu',
-                                          name ='Decoder')
+
 
         self.drop = tf.keras.layers.Dropout(self.drop_rt)
 
@@ -118,27 +106,16 @@ class LSTM_ED(tf.keras.Model):
         inp_e = tf.cast(inp_e, tf.float32)
         inp_d = tf.cast(inp_d, tf.float32)
 
-        # encoder 0
-        out_e = self.lstmE0(inp_e)
-
-        if training:
-            out_e = self.drop(out_e, training=training)
 
         # encoder 1
-        _, h, c = self.lstmE(out_e)
+        _, h, c = self.lstmE(inp_e)
 
         # decoder0
         out_d = self.lstmD0(inp_d, initial_state= [h, c])
 
-        if training:
-            out_d = self.drop(out_d, training=training)
-
-        # decoder1
-        out_d = self.lstmD1(out_d)
 
         if training:
             out_d = self.drop(out_d, training=training)
-
 
         # dense
         out_d = self.dense0(out_d)
