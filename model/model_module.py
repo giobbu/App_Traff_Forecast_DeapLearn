@@ -121,7 +121,7 @@ class LSTM_ED(tf.keras.Model):
 
         # bi-directional decoder
         # out_d = self.lstmD(inp_d, initial_state= [h, c])
-        out_d = tf.keras.layers.Bidirectional(self.lstmD, merge_mode ='ave')(inp_d, initial_state= [h, c]))
+        out_d = tf.keras.layers.Bidirectional(self.lstmD, merge_mode ='ave')(inp_d, initial_state= [h, c])
 
         if training:
             out_d = self.drop(out_d, training=training)
