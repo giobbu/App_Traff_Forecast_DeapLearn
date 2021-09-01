@@ -111,7 +111,7 @@ class LSTM_ED(tf.keras.Model):
         _, h, c = self.lstmE(inp_e)
 
         # decoder0
-        out_d = self.lstmD0(inp_d, initial_state= [h, c])
+        out_d = self.lstmD(inp_d, initial_state= [h, c])
 
 
         if training:
