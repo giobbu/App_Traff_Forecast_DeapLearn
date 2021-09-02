@@ -63,7 +63,7 @@ def plot_line_all(time_past, time_window, past, pred, targ, pred_nv, w, h):
             return line_past, line_targ, line_pred, line_pred_nv, line_zoom
 
 
-def plot_multistep_error(time_window, rmse_multi, std_rmse_multi, c, o,  w, h, string = None):
+def plot_multistep_error(time_window, rmse_multi, std_rmse_multi, c, o,  w, h, string = None): #, metric=None):
 
         if string == 'ErrorBar':
                 df_multi_rmse = pd.DataFrame({'timestamp':time_window, 'RMSE': rmse_multi, 'ymax': rmse_multi + std_rmse_multi, 'ymin': rmse_multi - std_rmse_multi})

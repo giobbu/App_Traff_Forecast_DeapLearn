@@ -1,19 +1,17 @@
 FROM continuumio/miniconda3
 
-WORKDIR /app
+WORKDIR /home/app
 
-COPY environment.yml environment.yml
+ADD environment.yml environment.yml
 RUN conda env create -f environment.yml
 
-# Make RUN commands use the new environment:
-SHELL ["conda", "run", "-n", "app", "/bin/bash", "-c"]
+# Pull the environment name out of the environment.yml
+RUN echo "source activate $(head -1 environment.yml | cut -d' ' -f2)" > ~/.bashrc
+ENV PATH /opt/conda/envs/$(head -1 environment.yml | cut -d' ' -f2)/bin:$PATH
 
 EXPOSE 8501
 
-# COPY . .
 COPY . .
 
-# CMD streamlit run run_.py
-
 # The code to run when container is started:
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "app", "streamlit", "run", "run_.py"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "app_conda_deap", "streamlit", "run", "run_.py"]
