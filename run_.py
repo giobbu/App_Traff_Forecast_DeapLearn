@@ -74,9 +74,9 @@ def main():
         with st.beta_container():
                 col1, col2 = st.beta_columns([20,20])
                 with col1:
-                        st.image('mlg.png', width=250)
+                        st.image('img/mlg.png', width=250)
                 with col2:
-                        st.image('ULB.jpeg', width=200)
+                        st.image('img/ULB.jpeg', width=200)
                         
                 st.markdown("""---""")
 
@@ -87,7 +87,7 @@ def main():
                 st.write('Reliable Traffic Forecasting schemes are fundamental to design Proactive Intelligent Transportation Systems (ITS). In this context deep learning models have recently shown promising results. The Streamlit App presents a tutorial on multi-horizon traffic flow predictions with LSTM encoder-decoder model.')
 
                 st.write("Check the paper [HERE](https://www.researchgate.net/publication/348930068_A_Tutorial_on_Network-Wide_Multi-Horizon_Traffic_Forecasting_with_Deep_Learning)")
-                st.image('ECDEC.jpg', width=500)
+                st.image('img/ECDEC.jpg', width=500)
                 st.markdown("""---""")
 
 
