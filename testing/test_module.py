@@ -32,8 +32,12 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
     st.markdown("""---""")
     st.title('Multivariate Multi-Horizon Traffic Prediction')
 
+    st.header('Prediction from t+1 to t+12 ')
+    timestamp_t_h = st.empty()
+
     st.markdown("""---""")
-    st.header('Next 30 Minutes ')
+    st.header('Map Displaying Prediction t+1')
+    timestamp_t_1 = st.empty()
 
 
     r, INITIAL_VIEW_STATE = layer_deck()
@@ -42,48 +46,55 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
     st.markdown("""---""")
     
     title =st.empty()
-    timestamp_t_h = st.empty()
+
 
     
     chart_all = st.empty()
     chart_multi = st.empty()
 
     st.markdown("""---""")
-    st.header('Performance Metrics ')
+    st.header('Individual Model Performance ')
 
 
-    st.write('DeepLearn: Historic (red) and current (black)')
+    st.write('DeepLearn: Historic (red) and current (blue)')
     col3, col4 = st.beta_columns(2)
     with col3:
+            st.write('RMSE')
             chart_errorrmse_multi = st.empty()                           
     with col4:
+            st.write('MAE')
             chart_errormae_multi = st.empty()
 
 
 
-    st.write('NaiveLearn: Historic (red) and current (black)')
+    st.write('NaiveLearn: Historic (red) and current (orange)')
     col5, col6 = st.beta_columns(2)
     with col5:
+            st.write('RMSE')
             chart_errorrmse_multi_nv = st.empty()                            
     with col6:
+            st.write('MAE')
             chart_errormae_multi_nv = st.empty()
 
 
-    st.subheader('Model Comparison')
+    st.subheader('Model Comparison - DeepLearn (Blue) NaiveLearn (Orange)')
 
-    st.write('DeepLearn (Blue) NaiveLearn (Red)')
+    st.write('Mean Error and StDev for Each Forecast Horizon')
     col7, col8 = st.beta_columns(2)
     with col7:
+            st.write('RMSE')
             chart_comp_rmse = st.empty()                            
     with col8:
+            st.write('MAE')
             chart_comp_mae = st.empty()
 
-    st.write(' Total Error Over Time  ')
-
+    st.write(' Total Mean Error Tracked Over Time  ')
+    st.write('RMSE')
     df_rmse = pd.DataFrame({'timestamp':[],'RMSE_nv':[], 'RMSE_dl': []})
     c = alt.Chart(df_rmse).transform_fold(['RMSE_nv', 'RMSE_dl']).mark_line().encode(x ='timestamp:T', y='value:Q', color='key:N').properties(width=500, height=200)
     chart_rmse = st.altair_chart(c, use_container_width=True)
 
+    st.write('MAE')
     df_mae = pd.DataFrame({'timestamp':[],'MAE_nv': [],'MAE_dl': []})
     c = alt.Chart(df_mae).transform_fold(['MAE_nv', 'MAE_dl']).mark_line().encode(x ='timestamp:T', y='value:Q', color='key:N').properties(width=500, height=200)
     chart_mae = st.altair_chart(c, use_container_width=True)
@@ -111,7 +122,10 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
 
             forecasts.append(pred)
             targets.append(truth)
-  
+
+            timestamp_t_h.subheader('From '+str(timestamp.iloc[step+12]) +' To ' +str(timestamp.iloc[step+23]))
+            
+            timestamp_t_1.subheader(str(timestamp.iloc[step+12]))
             r = deck(INITIAL_VIEW_STATE, lst, streets, pred)
             map.pydeck_chart(r)
                       
@@ -180,14 +194,14 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             with col3:
                 
                 rmse_ci, rmse_dot = plot_multistep_error( time_window, mean_rmse_multi, mean_stdrmse_multi, 'red', 0.1 ,  350, 200)
-                recent_rmse_ci, recent_rmse_dot = plot_multistep_error( time_window, recent_mean_rmse_multi, recent_mean_stdrmse_multi, 'black', 0.8 , 350, 200, 'ErrorBar')
+                recent_rmse_ci, recent_rmse_dot = plot_multistep_error( time_window, recent_mean_rmse_multi, recent_mean_stdrmse_multi, 'blue', 0.8 , 350, 200, 'ErrorBar')
                 chart_errorrmse_multi.altair_chart( rmse_ci + rmse_dot + recent_rmse_ci + recent_rmse_dot, use_container_width=True)
 
                 rmse_ci, rmse_dot = plot_multistep_error( time_window, mean_rmse_multi_nv, mean_stdrmse_multi_nv, 'red', 0.1 ,  350, 200)
-                recent_rmse_ci, recent_rmse_dot = plot_multistep_error( time_window, recent_mean_rmse_multi_nv, recent_mean_stdrmse_multi_nv, 'black', 0.8 , 350, 200, 'ErrorBar')
+                recent_rmse_ci, recent_rmse_dot = plot_multistep_error( time_window, recent_mean_rmse_multi_nv, recent_mean_stdrmse_multi_nv, 'orange', 0.8 , 350, 200, 'ErrorBar')
                 chart_errorrmse_multi_nv.altair_chart( rmse_ci + rmse_dot + recent_rmse_ci + recent_rmse_dot, use_container_width=True)
 
-                rmse_ci_nv, rmse_dot_nv = plot_multistep_error( time_window, recent_mean_rmse_multi_nv, recent_mean_stdrmse_multi_nv, 'red', 0.1 ,  350, 200)
+                rmse_ci_nv, rmse_dot_nv = plot_multistep_error( time_window, recent_mean_rmse_multi_nv, recent_mean_stdrmse_multi_nv, 'orange', 0.2 ,  350, 200)
                 rmse_ci, rmse_dot = plot_multistep_error( time_window, recent_mean_rmse_multi, recent_mean_stdrmse_multi, 'blue', 0.1 , 350, 200)
                 chart_comp_rmse.altair_chart( rmse_ci + rmse_dot + rmse_ci_nv + rmse_dot_nv, use_container_width=True)
 
@@ -196,14 +210,14 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             with col4:
 
                 mae_ci, mae_dot = plot_multistep_error( time_window, mean_mae_multi, mean_stdmae_multi, 'red', 0.1 , 350, 200)
-                recent_mae_ci, recent_mae_dot = plot_multistep_error( time_window, recent_mean_mae_multi, recent_mean_stdmae_multi, 'black', 0.8 ,  350, 200, 'ErrorBar')
+                recent_mae_ci, recent_mae_dot = plot_multistep_error( time_window, recent_mean_mae_multi, recent_mean_stdmae_multi, 'blue', 0.8 ,  350, 200, 'ErrorBar')
                 chart_errormae_multi.altair_chart( mae_ci + mae_dot + recent_mae_ci + recent_mae_dot, use_container_width=True)
 
                 mae_ci, mae_dot = plot_multistep_error( time_window, mean_mae_multi_nv, mean_stdmae_multi_nv, 'red', 0.1 , 350, 200)
-                recent_mae_ci, recent_mae_dot = plot_multistep_error( time_window, recent_mean_mae_multi_nv, recent_mean_stdmae_multi_nv, 'black', 0.8 ,  350, 200, 'ErrorBar')
+                recent_mae_ci, recent_mae_dot = plot_multistep_error( time_window, recent_mean_mae_multi_nv, recent_mean_stdmae_multi_nv, 'orange', 0.8 ,  350, 200, 'ErrorBar')
                 chart_errormae_multi_nv.altair_chart( mae_ci + mae_dot + recent_mae_ci + recent_mae_dot, use_container_width=True)
 
-                mae_ci, mae_dot = plot_multistep_error( time_window, mean_mae_multi_nv, mean_stdmae_multi_nv, 'red', 0.1 , 350, 200)
+                mae_ci, mae_dot = plot_multistep_error( time_window, mean_mae_multi_nv, mean_stdmae_multi_nv, 'orange', 0.2 , 350, 200)
                 mae_ci_nv, mae_dot_nv = plot_multistep_error( time_window, mean_mae_multi, mean_stdmae_multi, 'blue', 0.1 ,  350, 200)
                 chart_comp_mae.altair_chart( mae_ci + mae_dot + mae_ci_nv + mae_dot_nv, use_container_width=True)
 
@@ -219,7 +233,6 @@ def testing(model, tensor_test, aux_dim, scaler, out_sqc, lst, streets, timestam
             time_window = timestamp.iloc[step+12:step+24]
 
             title.header('Total Belgian Traffic Flow')
-            timestamp_t_h.subheader('From '+str(timestamp.iloc[step+12]) +' To ' +str(timestamp.iloc[step+23]))
             line_past, line_targ, line_pred,line_pred_nv, line_zoom = plot_line_all( time_past, time_window, all_truth, mean_pred_multi, mean_truth_multi, mean_pred_multi_nv, 800, 500)
 
             chart_all.altair_chart(line_past + line_targ + line_pred + line_pred_nv)

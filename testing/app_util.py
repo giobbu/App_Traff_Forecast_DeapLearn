@@ -66,14 +66,14 @@ def plot_line_all(time_past, time_window, past, pred, targ, pred_nv, w, h):
 def plot_multistep_error(time_window, rmse_multi, std_rmse_multi, c, o,  w, h, string = None): #, metric=None):
 
         if string == 'ErrorBar':
-                df_multi_rmse = pd.DataFrame({'timestamp':time_window, 'RMSE': rmse_multi, 'ymax': rmse_multi + std_rmse_multi, 'ymin': rmse_multi - std_rmse_multi})
-                dot_multi_rmse = alt.Chart(df_multi_rmse).transform_fold(['RMSE']).mark_point(opacity = 0.5, color= c).encode(x='timestamp:T', y='RMSE:Q').properties(width=w, height=h)
-                error = dot_multi_rmse.mark_errorbar(opacity = o).encode( x="timestamp:T", y="ymin:Q", y2="ymax:Q")
+                df_multi_rmse = pd.DataFrame({'timestamp':time_window, 'ymean': rmse_multi, 'ymax': rmse_multi + std_rmse_multi, 'ymin': rmse_multi - std_rmse_multi})
+                dot_multi_rmse = alt.Chart(df_multi_rmse).transform_fold(['ymean']).mark_point(opacity = 0.5, color= c).encode(x='timestamp:T', y='ymean:Q').properties(width=w, height=h)
+                error = dot_multi_rmse.mark_errorbar(opacity = o, color= c).encode( x="timestamp:T", y="ymin:Q", y2="ymax:Q")
         else:
-                df_multi_rmse = pd.DataFrame({'timestamp':time_window, 'RMSE': rmse_multi})
+                df_multi_rmse = pd.DataFrame({'timestamp':time_window, 'ymean': rmse_multi})
                 df_multi_rmse_std = pd.DataFrame({'timestamp':time_window, 'ymax': rmse_multi + std_rmse_multi, 'ymin': rmse_multi - std_rmse_multi})
 
-                dot_multi_rmse = alt.Chart(df_multi_rmse).transform_fold(['RMSE']).mark_point(opacity = 0.5, color= c).encode(x='timestamp:T', y='RMSE:Q').properties(width=w, height=h)
+                dot_multi_rmse = alt.Chart(df_multi_rmse).transform_fold(['ymean']).mark_point(opacity = 0.5, color= c).encode(x='timestamp:T', y='ymean:Q').properties(width=w, height=h)
                 error = alt.Chart(df_multi_rmse_std).mark_area(opacity = o,  color=c).encode(x='timestamp:T', y='ymax:Q', y2='ymin:Q').properties(width=w, height=h)
           
         return error, dot_multi_rmse 
