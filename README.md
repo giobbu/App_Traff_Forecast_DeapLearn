@@ -1,7 +1,8 @@
 
 # Deap Learning Model for Traffic Forecasting
 
-[![image alt text](https://github.com/giobbu/App_Traff_Forecast_DeapLearn/blob/master/img/ECDEC.jpg?raw=true)](https://github.com/giobbu/App_Traff_Forecast_DeapLearn/blob/master/img/demo.mp4 "Demo Video")
+https://user-images.githubusercontent.com/32134829/146791575-246a4ffc-f843-4279-a094-da4f1a5d39b4.mp4
+
 
 ## Build Image from Dockerfile
 
