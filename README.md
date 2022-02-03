@@ -26,7 +26,7 @@ docker image list
 ## Pull Image from Docker Hub
 To downloaded the image from Docker Hub:
 ```{r}
-docker pull  giobbu/deap_traff_app .
+docker pull giobbu/deap_traff_app
 ```
 
 ## Run Streamlit App Container
